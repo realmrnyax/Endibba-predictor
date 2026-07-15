@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Predictor — Phase 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #10161A; --panel: #161F24; --panel-line: #263038;
+    --chalk: #EDEEEA; --chalk-dim: #9BA7AC;
+    --pitch: #3C7A54; --pitch-bright: #58B57C;
+    --amber: #D9A441; --teal: #3B6E71;
+    --home: #58B57C; --away: #E0895A;
+  }
+  *{ box-sizing: border-box; }
+  body{ margin:0; background: var(--bg); color: var(--chalk); font-family:'Inter',sans-serif; padding: 28px 14px 90px; }
+  .wrap{ max-width: 900px; margin:0 auto; }
+  header{ margin-bottom: 22px; }
+  .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--pitch-bright); margin:0 0 8px; }
+  h1{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:34px; margin:0 0 6px; line-height:1.05; }
+  .sub{ color:var(--chalk-dim); font-size:14px; max-width:60ch; line-height:1.5; }
+
+  .panel{ background:var(--panel); border:1px solid var(--panel-line); border-radius:10px; padding:16px 18px; margin-bottom:16px; }
+  .field{ margin-bottom:10px; }
+  .field label{ display:block; font-size:12px; color:var(--chalk-dim); margin-bottom:4px; }
+  .field input, .field select{
+    width:100%; background:#0D1316; border:1px solid var(--panel-line); color:var(--chalk);
+    font-family:'IBM Plex Mono',monospace; font-size:13.5px; padding:8px 9px; border-radius:6px;
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--pitch-bright); }
+  .settings-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  @media (max-width:700px){ .settings-grid{ grid-template-columns:1fr 1fr; } }
+  .warn{ font-size:11.5px; color:var(--away); margin-top:5px; font-family:'IBM Plex Mono',monospace; }
+
+  .section-title{
+    font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:16px;
+    text-transform:uppercase; letter-spacing:0.06em; color:var(--chalk-dim); margin:26px 0 12px;
+  }
+
+  .match-picker{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .match-picker .field{ flex:1; min-width:220px; margin-bottom:0; }
+  .btn{ border:none; border-radius:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700;
+    letter-spacing:0.02em; cursor:pointer; padding:12px 20px; font-size:16px; color:var(--chalk); }
+  .btn-primary{ background:var(--pitch); }
+  .btn-primary:hover{ background:var(--pitch-bright); }
+  .btn-secondary{ background:var(--teal); }
+  .btn-danger{ background:#5A3E3E; }
+
+  .adjustments-log{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--amber);
+    background:#0D1316; border:1px solid var(--panel-line); border-radius:8px; padding:10px 12px; margin-top:10px;
+    display:none;
+  }
+  .adjustments-log.show{ display:block; }
+  .adjustments-log div{ margin-bottom:4px; }
+
+  .results{ margin-top:20px; display:none; }
+  .results.show{ display:block; }
+  .sim-line{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--chalk-dim); margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--panel-line); }
+  .sim-line b{ color:var(--pitch-bright); }
+
+  .outcome-bar{ display:flex; height:46px; border-radius:8px; overflow:hidden; margin-bottom:10px; border:1px solid var(--panel-line); }
+  .outcome-bar div{ display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:500; color:var(--bg); }
+  .seg-home{ background:var(--home); } .seg-draw{ background:var(--chalk-dim); } .seg-away{ background:var(--away); }
+
+  .markets{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:8px; }
+  @media (max-width:620px){ .markets{ grid-template-columns:1fr; } }
+  .market-card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:8px; padding:14px; }
+  .market-card .label{ font-size:12px; color:var(--chalk-dim); margin-bottom:4px; }
+  .market-card .value{ font-family:'IBM Plex Mono',monospace; font-size:24px; color:var(--amber); }
+
+  .heatmap-wrap{ overflow-x:auto; }
+  table.heatmap{ border-collapse:collapse; margin-top:8px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; width:100%; }
+  table.heatmap th{ color:var(--chalk-dim); font-weight:500; padding:6px 4px; text-align:center; }
+  table.heatmap td{ text-align:center; padding:8px 4px; color:var(--bg); font-weight:600; border-radius:3px; }
+
+  .log-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-top:14px; }
+  .log-row .field{ max-width:110px; margin-bottom:0; }
+
+  .calib-summary{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px; }
+  @media (max-width:620px){ .calib-summary{ grid-template-columns:1fr 1fr; } }
+
+  .empty-note{ color:var(--chalk-dim); font-size:13px; font-family:'IBM Plex Mono',monospace; }
+  footer{ margin-top:30px; font-size:12px; color:var(--chalk-dim); line-height:1.6; border-top:1px solid var(--panel-line); padding-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Phase 3 · Predictor</p>
+    <h1>Match Predictor</h1>
+    <p class="sub">Pulls a saved match from Phase 2, converts the full stat schema into attack/defense ratings, and runs it through the same validated Poisson/Dixon-Coles engine from Phase 1.</p>
+  </header>
+
+  <div class="section-title">Model Settings</div>
+  <div class="panel">
+    <div class="settings-grid">
+      <div class="field">
+        <label>League avg goals <u>per team</u> per game</label>
+        <input type="number" step="0.01" id="leagueAvg" value="1.35">
+        <div class="warn" id="leagueAvgWarning" style="display:none;"></div>
+      </div>
+      <div class="field"><label>Home advantage factor</label><input type="number" step="0.01" id="homeAdv" value="1.20"></div>
+      <div class="field"><label>Dixon-Coles ρ (rho)</label><input type="number" step="0.01" id="rho" value="-0.13"></div>
+      <div class="field"><label># of simulations</label><input type="number" step="1000" id="simCount" value="10000"></div>
+    </div>
+  </div>
+
+  <div class="section-title">Choose a Saved Match</div>
+  <div class="panel">
+    <div class="match-picker">
+      <div class="field">
+        <label>Saved matches</label>
+        <select id="matchSelect"><option value="">-- Select a match --</option></select>
+      </div>
+      <button class="btn btn-primary" onclick="loadAndPredict()">Load &amp; Predict</button>
+    </div>
+    <div class="adjustments-log" id="adjustmentsLog"></div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="sim-line" id="simSummary"></div>
+    <div class="section-title">Match Result</div>
+    <div class="outcome-bar" id="outcomeBar"></div>
+    <div class="section-title">Markets</div>
+    <div class="markets" id="marketsGrid"></div>
+    <div class="section-title">Correct Score Probability Matrix</div>
+    <div class="heatmap-wrap"><table class="heatmap" id="heatmapTable"></table></div>
+
+    <div class="section-title">Log Actual Result</div>
+    <div class="panel">
+      <div class="log-row">
+        <div class="field"><label id="logHomeLabel">Home goals</label><input type="number" id="actualHomeGoals" min="0" value="0"></div>
+        <div class="field"><label id="logAwayLabel">Away goals</label><input type="number" id="actualAwayGoals" min="0" value="0"></div>
+        <button class="btn btn-primary" onclick="logResult()">Add to Calibration Log</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="results" id="calibSection">
+    <div class="section-title">Calibration Log <span style="color:var(--chalk-dim); font-weight:400; font-size:13px;">(this session only)</span></div>
+    <div class="calib-summary" id="calibSummary"></div>
+    <div class="heatmap-wrap" style="margin-top:14px;"><table class="heatmap" id="calibTable" style="font-size:11.5px;"></table></div>
+    <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="exportLog()">Copy Log as Text</button>
+      <button class="btn btn-danger" onclick="clearLog()">Clear Log</button>
+    </div>
+  </div>
+
+  <footer>
+    Attack/defense ratings blend venue-specific form (50%), overall form (30%), and head-to-head (20%) from the saved match data. Squad/context factors (missing players, rotation risk, form momentum, match stakes) apply small adjustments on top — shown in the log above each time. This weighting is a first-pass assumption; recalibrate and adjust it as real results come in.
+  </footer>
+</div>
+
+<script>
+// ---- Poisson / Dixon-Coles core (same as Phase 1, validated) ----
+function poissonPMF(lambda, k){ return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k); }
+function factorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+function toNum(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+// ---- Load saved matches from Phase 2's localStorage ----
+function populateMatchSelect(){
+  const sel = document.getElementById('matchSelect');
+  sel.innerHTML = '<option value="">-- Select a match --</option>';
+  let items = [];
+  for(let i=0; i<localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && key.startsWith('matches:')){
+      try{ items.push(JSON.parse(localStorage.getItem(key))); } catch(e){}
+    }
+  }
+  items.sort((a,b)=> new Date(b.savedAt) - new Date(a.savedAt));
+  items.forEach(item=>{
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = `${item.homeTeam} vs ${item.awayTeam} (${item.comp || 'no comp'})`;
+    sel.appendChild(opt);
+  });
+  if(items.length === 0){
+    sel.innerHTML = '<option value="">No saved matches — add some in the Data Entry tool first</option>';
+  }
+}
+populateMatchSelect();
+
+// ---- Convert schema data into attack/defense + lambdas ----
+function computeLambdas(record, settings){
+  const home = record.data.home, away = record.data.away, shared = record.data.shared;
+  const adjustments = [];
+
+  function perGame(t, totalField, gamesField, fallbackGames){
+    const total = toNum(t[totalField]);
+    const games = toNum(t[gamesField]) || fallbackGames;
+    return games > 0 ? total/games : 0;
+  }
+
+  function baselineScored(t){
+    const venue = perGame(t, 'goals_scored_venue', 'goals_scored_venue_games', 5);
+    const overall = perGame(t, 'goals_scored_overall', 'goals_scored_overall_games', 5);
+    const h2h = perGame(t, 'goals_scored_h2h', 'goals_scored_h2h_games', 1);
+    return venue*0.5 + overall*0.3 + h2h*0.2;
+  }
+  function baselineConceded(t){
+    const venue = perGame(t, 'goals_conceded_venue', 'goals_conceded_venue_games', 5);
+    const overall = perGame(t, 'goals_conceded_overall', 'goals_conceded_overall_games', 5);
+    const h2h = perGame(t, 'goals_conceded_h2h', 'goals_conceded_h2h_games', 1);
+    return venue*0.5 + overall*0.3 + h2h*0.2;
+  }
+
+  const homeScored = baselineScored(home), homeConceded = baselineConceded(home);
+  const awayScored = baselineScored(away), awayConceded = baselineConceded(away);
+
+  const leagueAvg = settings.leagueAvg;
+  const atkHome = homeScored/leagueAvg, defHome = homeConceded/leagueAvg;
+  const atkAway = awayScored/leagueAvg, defAway = awayConceded/leagueAvg;
+
+  let lambdaHome = atkHome * defAway * leagueAvg * settings.homeAdv;
+  let lambdaAway = atkAway * defHome * leagueAvg;
+
+  function contextMultiplier(t, label){
+    let mult = 1;
+    if(t.key_player_out === 'Yes'){ mult *= 0.90; adjustments.push(`${label}: key player missing → -10% attack`); }
+    if(t.rotation_risk === 'Yes'){ mult *= 0.92; adjustments.push(`${label}: rotation risk → -8% attack`); }
+    const ppg3 = toNum(t.form_last3_pts)/3;
+    const ppg10 = toNum(t.form_last10_pts)/10;
+    if(ppg3 - ppg10 >= 0.6){ mult *= 1.05; adjustments.push(`${label}: form trending up (last 3 > last 10) → +5% attack`); }
+    else if(ppg10 - ppg3 >= 0.6){ mult *= 0.95; adjustments.push(`${label}: form trending down (last 3 < last 10) → -5% attack`); }
+    return mult;
+  }
+
+  let homeMult = contextMultiplier(home, record.homeTeam);
+  let awayMult = contextMultiplier(away, record.awayTeam);
+
+  if(shared.stakes === 'Must-win'){
+    homeMult *= 1.05; awayMult *= 1.05;
+    adjustments.push('Match flagged must-win → +5% attack both sides');
+  }
+  if(shared.stakes === 'Dead rubber / cup rotation'){
+    homeMult *= 0.90; awayMult *= 0.90;
+    adjustments.push('Dead rubber/cup rotation → -10% attack both sides');
+  }
+
+  lambdaHome *= homeMult;
+  lambdaAway *= awayMult;
+
+  if(adjustments.length === 0) adjustments.push('No context adjustments triggered — using pure form-based ratings.');
+
+  return {lambdaHome, lambdaAway, adjustments};
+}
+
+// ---- Simulation (identical approach to Phase 1) ----
+let lastPrediction = null;
+
+function loadAndPredict(){
+  const sel = document.getElementById('matchSelect');
+  const id = sel.value;
+  if(!id) return;
+  const raw = localStorage.getItem('matches:'+id);
+  if(!raw) return;
+  const record = JSON.parse(raw);
+
+  const leagueAvg = parseFloat(document.getElementById('leagueAvg').value);
+  const homeAdv = parseFloat(document.getElementById('homeAdv').value);
+  const rho = parseFloat(document.getElementById('rho').value);
+  const simCount = parseInt(document.getElementById('simCount').value);
+
+  const warnEl = document.getElementById('leagueAvgWarning');
+  if(leagueAvg > 2.2){
+    warnEl.style.display = 'block';
+    warnEl.textContent = `⚠ ${leagueAvg} looks like a COMBINED total, not per-team. Did you mean ${(leagueAvg/2).toFixed(2)}?`;
+  } else { warnEl.style.display = 'none'; }
+
+  const {lambdaHome, lambdaAway, adjustments} = computeLambdas(record, {leagueAvg, homeAdv});
+
+  const logEl = document.getElementById('adjustmentsLog');
+  logEl.classList.add('show');
+  logEl.innerHTML = adjustments.map(a=>`<div>• ${a}</div>`).join('');
+
+  runSimulation(record.homeTeam, record.awayTeam, lambdaHome, lambdaAway, rho, simCount);
+}
+
+function runSimulation(nameHome, nameAway, lambdaHome, lambdaAway, rho, simCount){
+  const MAX = 8;
+  let matrix = [];
+  for(let i=0;i<=MAX;i++){
+    let row = [];
+    for(let j=0;j<=MAX;j++) row.push(poissonPMF(lambdaHome,i)*poissonPMF(lambdaAway,j));
+    matrix.push(row);
+  }
+  function tau(i,j){
+    if(i===0 && j===0) return 1 - (lambdaHome*lambdaAway*rho);
+    if(i===0 && j===1) return 1 + (lambdaHome*rho);
+    if(i===1 && j===0) return 1 + (lambdaAway*rho);
+    if(i===1 && j===1) return 1 - rho;
+    return 1;
+  }
+  for(let i=0;i<=1;i++) for(let j=0;j<=1;j++) matrix[i][j] *= tau(i,j);
+
+  let total = 0;
+  for(let i=0;i<=MAX;i++) for(let j=0;j<=MAX;j++) total += matrix[i][j];
+  for(let i=0;i<=MAX;i++) for(let j=0;j<=MAX;j++) matrix[i][j] /= total;
+
+  let flat = [];
+  for(let i=0;i<=MAX;i++) for(let j=0;j<=MAX;j++) flat.push({i,j,p:matrix[i][j]});
+  let cumulative = [], running = 0;
+  for(const f of flat){ running += f.p; cumulative.push(running); }
+  function sampleOne(){
+    const r = Math.random();
+    for(let k=0;k<cumulative.length;k++) if(r <= cumulative[k]) return flat[k];
+    return flat[flat.length-1];
+  }
+
+  let homeWins=0, draws=0, awayWins=0, over25=0, btts=0;
+  for(let s=0;s<simCount;s++){
+    const d = sampleOne();
+    if(d.i > d.j) homeWins++; else if(d.i === d.j) draws++; else awayWins++;
+    if(d.i + d.j > 2.5) over25++;
+    if(d.i > 0 && d.j > 0) btts++;
+  }
+
+  const pHome = homeWins/simCount*100, pDraw = draws/simCount*100, pAway = awayWins/simCount*100;
+  const pOver = over25/simCount*100, pUnder = 100-pOver, pBtts = btts/simCount*100;
+
+  lastPrediction = {nameHome, nameAway, pHome, pDraw, pAway, pOver, pBtts};
+  document.getElementById('logHomeLabel').textContent = nameHome + ' goals';
+  document.getElementById('logAwayLabel').textContent = nameAway + ' goals';
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('simSummary').innerHTML =
+    `λ(${nameHome}) = <b>${lambdaHome.toFixed(2)}</b> &nbsp;|&nbsp; λ(${nameAway}) = <b>${lambdaAway.toFixed(2)}</b> &nbsp;|&nbsp; ${simCount.toLocaleString()} simulations &nbsp;|&nbsp; ρ = ${rho}`;
+
+  document.getElementById('outcomeBar').innerHTML = `
+    <div class="seg-home" style="width:${pHome}%">${pHome>=8?pHome.toFixed(1)+'%':''}</div>
+    <div class="seg-draw" style="width:${pDraw}%">${pDraw>=8?pDraw.toFixed(1)+'%':''}</div>
+    <div class="seg-away" style="width:${pAway}%">${pAway>=8?pAway.toFixed(1)+'%':''}</div>
+  `;
+
+  document.getElementById('marketsGrid').innerHTML = `
+    <div class="market-card"><div class="label">${nameHome} win</div><div class="value">${pHome.toFixed(1)}%</div></div>
+    <div class="market-card"><div class="label">Draw</div><div class="value">${pDraw.toFixed(1)}%</div></div>
+    <div class="market-card"><div class="label">${nameAway} win</div><div class="value">${pAway.toFixed(1)}%</div></div>
+    <div class="market-card"><div class="label">Over 2.5 goals</div><div class="value">${pOver.toFixed(1)}%</div></div>
+    <div class="market-card"><div class="label">Under 2.5 goals</div><div class="value">${pUnder.toFixed(1)}%</div></div>
+    <div class="market-card"><div class="label">Both teams to score</div><div class="value">${pBtts.toFixed(1)}%</div></div>
+  `;
+
+  const SHOW = 6;
+  let maxP = 0;
+  for(let i=0;i<=SHOW;i++) for(let j=0;j<=SHOW;j++) maxP = Math.max(maxP, matrix[i][j]);
+  let html = '<tr><th class="corner"></th>';
+  for(let j=0;j<=SHOW;j++) html += `<th>${nameAway} ${j}</th>`;
+  html += '</tr>';
+  for(let i=0;i<=SHOW;i++){
+    html += `<tr><th>${nameHome} ${i}</th>`;
+    for(let j=0;j<=SHOW;j++){
+      const p = matrix[i][j];
+      html += `<td style="background:${shadeColor(p/maxP)}">${(p*100).toFixed(1)}</td>`;
+    }
+    html += '</tr>';
+  }
+  document.getElementById('heatmapTable').innerHTML = html;
+}
+
+function shadeColor(t){
+  const c1=[22,31,36], c2=[217,164,65];
+  const r=Math.round(c1[0]+(c2[0]-c1[0])*t), g=Math.round(c1[1]+(c2[1]-c1[1])*t), b=Math.round(c1[2]+(c2[2]-c1[2])*t);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ---- Calibration log (same approach as Phase 1) ----
+let calibLog = [];
+function logResult(){
+  if(!lastPrediction) return;
+  const hg = parseInt(document.getElementById('actualHomeGoals').value) || 0;
+  const ag = parseInt(document.getElementById('actualAwayGoals').value) || 0;
+  let actualResult = 'draw';
+  if(hg > ag) actualResult = 'home'; else if(ag > hg) actualResult = 'away';
+  const predictedTop = lastPrediction.pHome >= lastPrediction.pDraw && lastPrediction.pHome >= lastPrediction.pAway
+    ? 'home' : (lastPrediction.pAway >= lastPrediction.pDraw ? 'away' : 'draw');
+  const actualOver = (hg+ag) > 2.5, actualBtts = (hg>0 && ag>0);
+  const predOverPick = lastPrediction.pOver >= 50, predBttsPick = lastPrediction.pBtts >= 50;
+  const outcomeVec = {home: hg>ag?1:0, draw: hg===ag?1:0, away: ag>hg?1:0};
+  const brier = Math.pow(lastPrediction.pHome/100-outcomeVec.home,2) + Math.pow(lastPrediction.pDraw/100-outcomeVec.draw,2) + Math.pow(lastPrediction.pAway/100-outcomeVec.away,2);
+
+  calibLog.push({
+    home: lastPrediction.nameHome, away: lastPrediction.nameAway,
+    pHome: lastPrediction.pHome, pDraw: lastPrediction.pDraw, pAway: lastPrediction.pAway,
+    scoreHg: hg, scoreAg: ag,
+    resultHit: predictedTop === actualResult, overHit: predOverPick === actualOver, bttsHit: predBttsPick === actualBtts,
+    brier
+  });
+  renderCalibLog();
+}
+
+function renderCalibLog(){
+  document.getElementById('calibSection').classList.add('show');
+  const n = calibLog.length;
+  const resultAcc = n ? (calibLog.filter(l=>l.resultHit).length/n*100) : 0;
+  const overAcc = n ? (calibLog.filter(l=>l.overHit).length/n*100) : 0;
+  const bttsAcc = n ? (calibLog.filter(l=>l.bttsHit).length/n*100) : 0;
+  const avgBrier = n ? (calibLog.reduce((s,l)=>s+l.brier,0)/n) : 0;
+
+  document.getElementById('calibSummary').innerHTML = `
+    <div class="market-card"><div class="label">Matches logged</div><div class="value">${n}</div></div>
+    <div class="market-card"><div class="label">Result accuracy</div><div class="value">${resultAcc.toFixed(0)}%</div></div>
+    <div class="market-card"><div class="label">Avg Brier</div><div class="value">${avgBrier.toFixed(3)}</div></div>
+    <div class="market-card"><div class="label">O/U accuracy</div><div class="value">${overAcc.toFixed(0)}%</div></div>
+    <div class="market-card"><div class="label">BTTS accuracy</div><div class="value">${bttsAcc.toFixed(0)}%</div></div>
+    <div class="market-card"><div class="label">Note</div><div class="value" style="font-size:12px; color:var(--chalk-dim);">New engine — recalibrate fresh</div></div>
+  `;
+
+  let html = '<tr><th class="corner">Match</th><th>Pred H/D/A%</th><th>Actual</th><th>Result</th><th>O/U</th><th>BTTS</th></tr>';
+  calibLog.forEach(l=>{
+    html += `<tr>
+      <td style="background:var(--panel); color:var(--chalk); text-align:left;">${l.home} vs ${l.away}</td>
+      <td style="background:var(--panel); color:var(--chalk-dim);">${l.pHome.toFixed(0)}/${l.pDraw.toFixed(0)}/${l.pAway.toFixed(0)}</td>
+      <td style="background:var(--panel); color:var(--chalk);">${l.scoreHg}-${l.scoreAg}</td>
+      <td style="background:${l.resultHit?'rgba(88,181,124,0.25)':'rgba(224,137,90,0.25)'};">${l.resultHit?'✓':'✗'}</td>
+      <td style="background:${l.overHit?'rgba(88,181,124,0.25)':'rgba(224,137,90,0.25)'};">${l.overHit?'✓':'✗'}</td>
+      <td style="background:${l.bttsHit?'rgba(88,181,124,0.25)':'rgba(224,137,90,0.25)'};">${l.bttsHit?'✓':'✗'}</td>
+    </tr>`;
+  });
+  document.getElementById('calibTable').innerHTML = html;
+}
+
+function exportLog(){
+  let text = 'Match,PredHome%,PredDraw%,PredAway%,ActualScore,ResultHit,OverHit,BttsHit\n';
+  calibLog.forEach(l=>{
+    text += `${l.home} vs ${l.away},${l.pHome.toFixed(1)},${l.pDraw.toFixed(1)},${l.pAway.toFixed(1)},${l.scoreHg}-${l.scoreAg},${l.resultHit},${l.overHit},${l.bttsHit}\n`;
+  });
+  navigator.clipboard.writeText(text).then(()=> alert('Log copied — paste it somewhere safe.'));
+}
+
+function clearLog(){
+  if(confirm('Clear the calibration log?')){ calibLog = []; renderCalibLog(); }
+}
+</script>
+</body>
+</html>
