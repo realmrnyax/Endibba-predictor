@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #10161A; --panel: #161F24; --panel-line: #263038;
+    --chalk: #EDEEEA; --chalk-dim: #9BA7AC;
+    --pitch: #3C7A54; --pitch-bright: #58B57C;
+    --amber: #D9A441; --teal: #3B6E71; --away: #E0895A;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0; background: var(--bg); color: var(--chalk);
+    font-family:'Inter',sans-serif; padding: 40px 16px 60px;
+  }
+  .wrap{ max-width: 640px; margin: 0 auto; }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--pitch-bright); margin:0 0 10px;
+  }
+  h1{
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:40px;
+    margin:0 0 10px; line-height:1.05;
+  }
+  .sub{ color:var(--chalk-dim); font-size:15px; line-height:1.55; margin-bottom:34px; max-width:52ch; }
+
+  .card{
+    display:block; text-decoration:none;
+    background: var(--panel); border:1px solid var(--panel-line); border-radius:12px;
+    padding:22px; margin-bottom:16px; transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .card:hover{ border-color: var(--pitch-bright); }
+  .card:active{ transform: scale(0.99); }
+  .card-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.08em;
+    text-transform:uppercase; padding:3px 9px; border-radius:4px; display:inline-block; margin-bottom:12px;
+  }
+  .tag-league{ background: rgba(88,181,124,0.15); color: var(--pitch-bright); }
+  .tag-cup{ background: rgba(224,137,90,0.15); color: var(--away); }
+  .card h2{
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:24px;
+    margin:0 0 6px; color: var(--chalk);
+  }
+  .card p{ color: var(--chalk-dim); font-size:13.5px; line-height:1.5; margin:0; }
+  .card .arrow{ float:right; color: var(--chalk-dim); font-family:'IBM Plex Mono',monospace; font-size:20px; }
+
+  footer{
+    margin-top:34px; font-size:12px; color:var(--chalk-dim); line-height:1.6;
+    border-top:1px solid var(--panel-line); padding-top:16px;
+  }
+  footer a{ color: var(--pitch-bright); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Personal Football Analysis</p>
+  <h1>Football Predictor</h1>
+  <p class="sub">Poisson/Dixon-Coles match simulation, built for real matches with real data. Pick the tool that matches the fixture.</p>
+
+  <a class="card" href="football_predictor_app.html">
+    <span class="arrow">→</span>
+    <span class="card-tag tag-league">League Matches</span>
+    <h2>Match Predictor</h2>
+    <p>For domestic league fixtures where both teams play in the same competition. One shared league average, data entry + prediction in one place.</p>
+  </a>
+
+  <a class="card" href="cups_tournaments_predictor.html">
+    <span class="arrow">→</span>
+    <span class="card-tag tag-cup">Cross-League</span>
+    <h2>Cups &amp; Tournaments</h2>
+    <p>For Champions League, World Cup, and other fixtures where the two teams come from different leagues of different strength. Normalizes each team against their own league.</p>
+  </a>
+
+  <a class="card" href="team_history.html">
+    <span class="arrow">→</span>
+    <span class="card-tag" style="background: rgba(217,164,65,0.15); color: var(--amber);">Data</span>
+    <h2>Team History</h2>
+    <p>See every team you've logged results for, how many games are on record, and manage or clear stored history.</p>
+  </a>
+
+  <footer>
+    Both tools share the same saved-match storage and team history — data entered or logged in one is available in the other. Storage lives in this browser only; use the same URL each time.
+    <br><br>
+    Also available: <a href="match_simulator_prototype.html">Quick Simulator</a> — a lightweight sandbox for testing the Poisson math directly with manual inputs, no saved data required.
+  </footer>
+</div>
+</body>
+</html>
