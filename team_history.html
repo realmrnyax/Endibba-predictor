@@ -25,11 +25,12 @@
   }
   h1{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:32px; margin:0 0 6px; }
   .sub{ color:var(--chalk-dim); font-size:14px; max-width:60ch; line-height:1.5; margin-bottom:6px; }
-  .back-link{
-    display:inline-block; margin-bottom:20px; color: var(--chalk-dim);
-    text-decoration:none; font-size:13px; font-family:'IBM Plex Mono',monospace;
+  .site-nav{
+    display:flex; gap:16px; flex-wrap:wrap; margin-bottom:26px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px;
   }
-  .back-link:hover{ color: var(--pitch-bright); }
+  .site-nav a{ color: var(--chalk-dim); text-decoration:none; }
+  .site-nav a:hover, .site-nav a.current{ color: var(--pitch-bright); }
 
   .search-bar{ margin-bottom:18px; }
   .search-bar input{
@@ -89,7 +90,12 @@
 </head>
 <body>
 <div class="wrap">
-  <a class="back-link" href="index.html">← Back</a>
+  <nav class="site-nav">
+    <a href="index.html">Home</a>
+    <a href="football_predictor_app.html">League Matches</a>
+    <a href="cups_tournaments_predictor.html">Cups &amp; Tournaments</a>
+    <a href="team_history.html" class="current">Team History</a>
+  </nav>
   <p class="eyebrow">Team History</p>
   <h1>Your Stored Teams</h1>
   <p class="sub">Every team you've logged a result for, and what's remembered about them. Shared across both predictor tools.</p>

@@ -202,6 +202,12 @@
   .empty-note{ color:var(--chalk-dim); font-size:13px; font-family:'IBM Plex Mono',monospace; }
   footer{ margin-top:30px; font-size:12px; color:var(--chalk-dim); line-height:1.6; border-top:1px solid var(--panel-line); padding-top:14px; }
 
+.site-nav{
+  display:flex; gap:16px; flex-wrap:wrap; margin-bottom:26px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px;
+}
+.site-nav a{ color: var(--chalk-dim); text-decoration:none; }
+.site-nav a:hover, .site-nav a.current{ color: var(--pitch-bright); }
 .tabnav{ display:flex; gap:8px; margin-bottom:22px; border-bottom:1px solid var(--panel-line); }
 .tabnav button{
   background:none; border:none; color:var(--chalk-dim); font-family:'Barlow Condensed',sans-serif;
@@ -216,6 +222,12 @@
 </head>
 <body>
 <div class="wrap">
+  <nav class="site-nav">
+    <a href="index.html">Home</a>
+    <a href="football_predictor_app.html" class="current">League Matches</a>
+    <a href="cups_tournaments_predictor.html">Cups &amp; Tournaments</a>
+    <a href="team_history.html">Team History</a>
+  </nav>
   <header>
     <p class="eyebrow">Football Prediction App</p>
     <h1>Match Predictor</h1>
@@ -319,6 +331,10 @@
 
   <footer>
     Attack/defense ratings blend venue-specific form, overall form, and head-to-head — H2H weight scales with how many H2H games you have (a single game carries little weight; 5+ games reaches full weight). Squad/context factors (missing players, rotation risk, form momentum, match stakes) apply small adjustments on top, capped at ±20% combined — shown in the log above each time.
+    <br><br>
+    <a href="index.html" style="color:var(--pitch-bright);">← Home</a> &nbsp;·&nbsp;
+    <a href="cups_tournaments_predictor.html" style="color:var(--pitch-bright);">Cups &amp; Tournaments</a> &nbsp;·&nbsp;
+    <a href="team_history.html" style="color:var(--pitch-bright);">Team History</a>
   </footer>
   </div>
 </div>
