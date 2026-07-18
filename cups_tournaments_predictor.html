@@ -247,9 +247,11 @@
 
   <div id="tabEntry" class="tab-content active">
     <div class="match-meta">
-    <div class="field"><label>Home team</label><input id="metaHome" placeholder="e.g. Arsenal"></div>
-    <div class="field"><label>Away team</label><input id="metaAway" placeholder="e.g. Man City"></div>
-    <div class="field"><label>Competition / League</label><input id="metaComp" placeholder="e.g. Premier League"></div>
+    <div class="field"><label>Home team</label><input id="metaHome" list="teamNamesList" placeholder="e.g. Arsenal" onblur="maybeAutoLoadHistory()"></div>
+    <div class="field"><label>Away team</label><input id="metaAway" list="teamNamesList" placeholder="e.g. Man City" onblur="maybeAutoLoadHistory()"></div>
+    <div class="field"><label>Competition / League</label><input id="metaComp" list="compNamesList" placeholder="e.g. Premier League"></div>
+    <datalist id="teamNamesList"></datalist>
+    <datalist id="compNamesList"></datalist>
   </div>
 
   <div class="panel" style="margin-bottom:16px;">
@@ -493,6 +495,57 @@ function setField(prefix, id, value){
   if(el) el.value = value;
 }
 
+// ---- Autocomplete: remembered team names & competitions ----
+function getKnownTeams(){
+  try{ return JSON.parse(localStorage.getItem('knownTeams') || '[]'); } catch(e){ return []; }
+}
+function getKnownComps(){
+  try{ return JSON.parse(localStorage.getItem('knownComps') || '[]'); } catch(e){ return []; }
+}
+function rememberTeam(name){
+  if(!name) return;
+  let teams = getKnownTeams();
+  if(!teams.some(t => t.toLowerCase() === name.toLowerCase())){
+    teams.push(name);
+    localStorage.setItem('knownTeams', JSON.stringify(teams));
+  }
+}
+function rememberComp(name){
+  if(!name) return;
+  let comps = getKnownComps();
+  if(!comps.some(c => c.toLowerCase() === name.toLowerCase())){
+    comps.push(name);
+    localStorage.setItem('knownComps', JSON.stringify(comps));
+  }
+}
+function populateAutocompleteLists(){
+  let teams = getKnownTeams();
+  for(let i=0; i<localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && key.startsWith('teamhistory:')){
+      const name = key.replace('teamhistory:', '');
+      if(!teams.some(t => t.toLowerCase() === name.toLowerCase())){
+        teams.push(name);
+      }
+    }
+  }
+  localStorage.setItem('knownTeams', JSON.stringify(teams));
+
+  const teamList = document.getElementById('teamNamesList');
+  const compList = document.getElementById('compNamesList');
+  if(teamList) teamList.innerHTML = teams.map(t=>`<option value="${t}">`).join('');
+  if(compList) compList.innerHTML = getKnownComps().map(c=>`<option value="${c}">`).join('');
+}
+populateAutocompleteLists();
+
+function maybeAutoLoadHistory(){
+  const homeTeam = document.getElementById('metaHome').value.trim();
+  const awayTeam = document.getElementById('metaAway').value.trim();
+  if(homeTeam && awayTeam){
+    loadTeamHistory();
+  }
+}
+
 function loadTeamHistory(){
   const homeTeam = document.getElementById('metaHome').value.trim();
   const awayTeam = document.getElementById('metaAway').value.trim();
@@ -534,7 +587,12 @@ function loadTeamHistory(){
     setField(prefix,'form_last3_pts', pointsFrom(history.slice(0,3)));
     setField(prefix,'form_last10_pts', pointsFrom(history.slice(0,10)));
 
-    return {found: history.length, venueFound: venueSlice.length};
+    return {
+      found: history.length,
+      venueFound: venueSlice.length,
+      venueGoalsFor: venueSlice.length ? venueSlice.reduce((s,h)=>s+h.goalsFor,0) : null,
+      venueLabel: venueForThisTeam
+    };
   }
 
   const homeResult = fillFromHistory('home', homeTeam, awayTeam, 'home');
@@ -561,8 +619,14 @@ function loadTeamHistory(){
     statusEl.style.color = 'var(--away)';
     statusEl.textContent = `No history found for either team yet — log some actual results and it'll start filling in automatically next time.`;
   } else {
+    const homeDetail = homeResult.venueFound
+      ? `${homeTeam}: ${homeResult.venueGoalsFor} goals in last ${homeResult.venueFound} home games`
+      : `${homeTeam}: ${homeFound} games on record (no home-specific games yet)`;
+    const awayDetail = awayResult.venueFound
+      ? `${awayTeam}: ${awayResult.venueGoalsFor} goals in last ${awayResult.venueFound} away games`
+      : `${awayTeam}: ${awayFound} games on record (no away-specific games yet)`;
     statusEl.style.color = 'var(--pitch-bright)';
-    statusEl.textContent = `Loaded: ${homeTeam} (${homeFound} games on record), ${awayTeam} (${awayFound} games on record)${h2hMatches.length ? `, ${h2hMatches.length} H2H match(es) found` : ''}.`;
+    statusEl.textContent = `Auto-loaded — ${homeDetail}. ${awayDetail}.${h2hMatches.length ? ` ${h2hMatches.length} H2H match(es) found.` : ''}`;
   }
 }
 
@@ -633,6 +697,11 @@ async function saveMatch(){
     statusEl.textContent = "Enter both team names before saving.";
     return;
   }
+
+  rememberTeam(homeTeam);
+  rememberTeam(awayTeam);
+  rememberComp(comp);
+  populateAutocompleteLists();
 
   const matchId = 'match_' + Date.now();
   const record = {
